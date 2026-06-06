@@ -1,46 +1,19 @@
 from flask import Flask, request
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
-import asyncio
-import os
 import requests
 
-# ---------- ENV ----------
-TOKEN = os.environ.get("TOKEN")
-ADMIN_ID = int(os.environ.get("ADMIN_ID"))
-URL = os.environ.get("URL")
+TOKEN = "8681244479:AAFBkhHZRG32Te0mY_7yIA_ZBVU6V6Ldl7Q"
+ADMIN_ID = 777430200
+URL = "https://marisolybot.onrender.com/webhook"
 
-# ---------- Flask ----------
 app = Flask(__name__)
 
-# ---------- Telegram App ----------
-application = Application.builder().token(TOKEN).build()
+
+# set webhook (فقط یک بار اجرا میشه)
+def set_webhook():
+    url = f"https://api.telegram.org/bot{TOKEN}/setWebhook"
+    requests.post(url, data={"url": URL})
 
 
-# ---------- Handlers ----------
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🌊 خوش اومدی به Marisol")
-
-
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-
-    # ارسال به ادمین
-    await context.bot.send_message(
-        chat_id=ADMIN_ID,
-        text=f"📩 پیام جدید:\n{text}"
-    )
-
-    # جواب به کاربر
-    await update.message.reply_text("ارسال شد 🌊")
-
-
-# ثبت هندلرها
-application.add_handler(CommandHandler("start", start))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-
-# ---------- Flask routes ----------
 @app.route("/")
 def home():
     return "Bot is running!"
@@ -48,25 +21,33 @@ def home():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.get_json(force=True)
+    data = request.get_json()
 
-    update = Update.de_json(data, application.bot)
+    if not data:
+        return "no data"
 
-    # اجرای async بدون crash
-    asyncio.create_task(application.process_update(update))
+    message = data.get("message")
+
+    if not message:
+        return "no message"
+
+    text = message.get("text")
+    chat_id = message["chat"]["id"]
+
+    if text == "/start":
+        send_message(chat_id, "🌊 خوش اومدی به Marisol")
+    else:
+        send_message(ADMIN_ID, f"📩 پیام:\n{text}")
+        send_message(chat_id, "ارسال شد 🌊")
 
     return "ok"
 
 
-# ---------- Set webhook ----------
-def set_webhook():
-    requests.get(
-        f"https://api.telegram.org/bot{TOKEN}/setWebhook",
-        params={"url": URL}
-    )
+def send_message(chat_id, text):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    requests.post(url, data={"chat_id": chat_id, "text": text})
 
 
-# ---------- Run ----------
 if __name__ == "__main__":
     set_webhook()
     app.run(host="0.0.0.0", port=10000)
