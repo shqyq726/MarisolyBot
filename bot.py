@@ -69,7 +69,8 @@ def send_message(chat_id, text, reply_markup=None):
 
     payload = {
         "chat_id": chat_id,
-        "text": text
+        "text": text,
+        "parse_mode": "Markdown"
     }
 
     if reply_markup:
@@ -116,6 +117,17 @@ def send_media(chat_id, file_id, media_type, caption=None, reply_markup=None):
 
     requests.post(url, data=payload)
 
+# ================= UI BOX =================
+
+def user_box(code, first, username):
+    return (
+        "```\n"
+        f"CODE: {code}\n"
+        f"NAME: {first}\n"
+        f"USER: @{username}\n"
+        "```"
+    )
+
 # ================= BUTTONS =================
 
 def buttons(code, chat_id):
@@ -136,7 +148,7 @@ def webhook():
     if not data:
         return "ok"
 
-    # ========== CALLBACK ==========
+    # ========= CALLBACK =========
     if "callback_query" in data:
         cq = data["callback_query"]
         action, value = cq["data"].split("|")
@@ -164,7 +176,6 @@ def webhook():
     # ================= ADMIN =================
     if chat_id == ADMIN_ID:
 
-        # 🔥 ریپلای مستقیم
         if msg.get("reply_to_message"):
 
             replied_id = msg["reply_to_message"]["message_id"]
@@ -173,40 +184,30 @@ def webhook():
             if str(replied_id) in mp:
                 target = mp[str(replied_id)]["chat_id"]
 
-                # ===== TEXT =====
                 if msg.get("text"):
                     send_message(target, f"☀️ پاسخ:\n\n{text}")
 
-                # ===== PHOTO =====
                 elif msg.get("photo"):
-                    file_id = msg["photo"][-1]["file_id"]
-                    send_media(target, file_id, "photo")
+                    send_media(target, msg["photo"][-1]["file_id"], "photo")
 
-                # ===== VIDEO =====
                 elif msg.get("video"):
                     send_media(target, msg["video"]["file_id"], "video")
 
-                # ===== VOICE =====
                 elif msg.get("voice"):
                     send_media(target, msg["voice"]["file_id"], "voice")
 
-                # ===== AUDIO =====
                 elif msg.get("audio"):
                     send_media(target, msg["audio"]["file_id"], "audio")
 
-                # ===== DOCUMENT =====
                 elif msg.get("document"):
                     send_media(target, msg["document"]["file_id"], "document")
 
-                # ===== STICKER =====
                 elif msg.get("sticker"):
                     send_media(target, msg["sticker"]["file_id"], "sticker")
 
-                # ===== GIF =====
                 elif msg.get("animation"):
                     send_media(target, msg["animation"]["file_id"], "animation")
 
-                # ===== VIDEO NOTE =====
                 elif msg.get("video_note"):
                     send_media(target, msg["video_note"]["file_id"], "video_note")
 
@@ -215,27 +216,6 @@ def webhook():
             else:
                 send_message(ADMIN_ID, "❌ این پیام قابل ریپلای نیست")
 
-            return "ok"
-
-        # 🔹 ریپلای دستی (/reply)
-        if text.startswith("/reply"):
-            parts = text.split(" ", 2)
-
-            if len(parts) < 3:
-                send_message(ADMIN_ID, "/reply U001 متن")
-                return "ok"
-
-            code = parts[1]
-            reply = parts[2]
-
-            target = find_chat_by_code(code)
-
-            if not target:
-                send_message(ADMIN_ID, "❌ کاربر پیدا نشد")
-                return "ok"
-
-            send_message(target, f"☀️ پاسخ:\n\n{reply}")
-            send_message(ADMIN_ID, "ارسال شد 🌊")
             return "ok"
 
         return "ok"
@@ -250,7 +230,7 @@ def webhook():
     first = msg["from"].get("first_name", "")
     username = msg["from"].get("username", "ندارد")
 
-    header = f"📩 {code}\n☀️ {first}\n🌊 @{username}"
+    box = user_box(code, first, username)
 
     # ========= TEXT =========
     if msg.get("text"):
@@ -259,7 +239,8 @@ def webhook():
             f"https://api.telegram.org/bot{TOKEN}/sendMessage",
             data={
                 "chat_id": ADMIN_ID,
-                "text": header + "\n\n" + text,
+                "text": f"{text}\n\n{box}",
+                "parse_mode": "Markdown",
                 "reply_markup": json.dumps(buttons(code, chat_id))
             }
         )
@@ -278,26 +259,31 @@ def webhook():
 
     # ========= PHOTO =========
     elif msg.get("photo"):
-        file_id = msg["photo"][-1]["file_id"]
-        send_media(ADMIN_ID, file_id, "photo", caption=header, reply_markup=buttons(code, chat_id))
+        send_media(
+            ADMIN_ID,
+            msg["photo"][-1]["file_id"],
+            "photo",
+            caption=box,
+            reply_markup=buttons(code, chat_id)
+        )
         send_message(chat_id, "ارسال شد 🌊")
         return "ok"
 
     # ========= VIDEO =========
     elif msg.get("video"):
-        send_media(ADMIN_ID, msg["video"]["file_id"], "video", caption=header, reply_markup=buttons(code, chat_id))
+        send_media(ADMIN_ID, msg["video"]["file_id"], "video", caption=box, reply_markup=buttons(code, chat_id))
         send_message(chat_id, "ارسال شد 🌊")
         return "ok"
 
     # ========= VOICE =========
     elif msg.get("voice"):
-        send_media(ADMIN_ID, msg["voice"]["file_id"], "voice", caption=header, reply_markup=buttons(code, chat_id))
+        send_media(ADMIN_ID, msg["voice"]["file_id"], "voice", caption=box, reply_markup=buttons(code, chat_id))
         send_message(chat_id, "ارسال شد 🌊")
         return "ok"
 
     # ========= AUDIO =========
     elif msg.get("audio"):
-        send_media(ADMIN_ID, msg["audio"]["file_id"], "audio", caption=header, reply_markup=buttons(code, chat_id))
+        send_media(ADMIN_ID, msg["audio"]["file_id"], "audio", caption=box, reply_markup=buttons(code, chat_id))
         send_message(chat_id, "ارسال شد 🌊")
         return "ok"
 
@@ -309,7 +295,7 @@ def webhook():
 
     # ========= ANIMATION =========
     elif msg.get("animation"):
-        send_media(ADMIN_ID, msg["animation"]["file_id"], "animation", caption=header, reply_markup=buttons(code, chat_id))
+        send_media(ADMIN_ID, msg["animation"]["file_id"], "animation", caption=box, reply_markup=buttons(code, chat_id))
         send_message(chat_id, "ارسال شد 🌊")
         return "ok"
 
@@ -321,7 +307,7 @@ def webhook():
 
     # ========= DOCUMENT =========
     elif msg.get("document"):
-        send_media(ADMIN_ID, msg["document"]["file_id"], "document", caption=header, reply_markup=buttons(code, chat_id))
+        send_media(ADMIN_ID, msg["document"]["file_id"], "document", caption=box, reply_markup=buttons(code, chat_id))
         send_message(chat_id, "ارسال شد 🌊")
         return "ok"
 
