@@ -3,7 +3,7 @@ from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 import asyncio
 
-TOKEN = "YOUR_TOKEN"
+TOKEN = "8681244479:AAHqAg2hYNu8HHHJ5NgWbcqrZQmDY77a2KI"
 ADMIN_ID = 777430200
 BASE_URL = "https://marisolybot.onrender.com"
 
