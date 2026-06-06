@@ -78,7 +78,7 @@ def send_action_buttons(code, chat_id):
     keyboard = {
         "inline_keyboard": [
             [
-                {"text": "✉️ Reply", "callback_data": f"reply|{code}"},
+                {"text": "☀️ Reply", "callback_data": f"reply|{code}"},
                 {"text": "🚫 Block", "callback_data": f"block|{chat_id}"}
             ]
         ]
@@ -136,7 +136,7 @@ def webhook():
                 send_message(ADMIN_ID, "❌ کاربر پیدا نشد")
                 return "ok"
 
-            send_message(target, f"💬 پاسخ:\n\n{msg}")
+            send_message(target, f"☀️ پاسخ:\n\n{msg}")
             send_message(ADMIN_ID, "🌊 ارسال شد")
             return "ok"
 
