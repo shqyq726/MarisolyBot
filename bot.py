@@ -3,7 +3,7 @@ import requests
 import json
 import os
 
-TOKEN = "8616514786:AAG5Kffc5xJLvdb_AUA2G4crTrC_dKUCcN8"
+TOKEN = "YOUR_TOKEN"
 ADMIN_ID = 777430200
 URL = "https://your-app.onrender.com/webhook"
 
@@ -12,14 +12,13 @@ app = Flask(__name__)
 USERS_FILE = "users.json"
 
 
-# ----------------------
-# DB
-# ----------------------
+# ---------------- DB ----------------
 def load_users():
     if os.path.exists(USERS_FILE):
         with open(USERS_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return {}
+
 
 def save_users(users):
     with open(USERS_FILE, "w", encoding="utf-8") as f:
@@ -40,7 +39,7 @@ def get_user(chat_id):
     return users[chat_id]
 
 
-def set_block(chat_id, value=True):
+def set_block(chat_id, value):
     users = load_users()
     chat_id = str(chat_id)
 
@@ -57,16 +56,10 @@ def find_chat_by_code(code):
     return None
 
 
-# ----------------------
-# Telegram API
-# ----------------------
+# ---------------- Telegram ----------------
 def send_message(chat_id, text, reply_markup=None):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-
-    payload = {
-        "chat_id": chat_id,
-        "text": text
-    }
+    payload = {"chat_id": chat_id, "text": text}
 
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
@@ -74,70 +67,100 @@ def send_message(chat_id, text, reply_markup=None):
     requests.post(url, data=payload)
 
 
-def send_action_buttons(code, chat_id):
-    keyboard = {
+def send_file(chat_id, file_id, file_type):
+    url_map = {
+        "photo": "sendPhoto",
+        "video": "sendVideo",
+        "voice": "sendVoice",
+        "audio": "sendAudio",
+        "document": "sendDocument"
+    }
+
+    method = url_map.get(file_type)
+    if not method:
+        return
+
+    url = f"https://api.telegram.org/bot{TOKEN}/{method}"
+
+    key = {
+        "photo": "photo",
+        "video": "video",
+        "voice": "voice",
+        "audio": "audio",
+        "document": "document"
+    }[file_type]
+
+    requests.post(url, data={
+        "chat_id": chat_id,
+        key: file_id
+    })
+
+
+# ---------------- Buttons ----------------
+def buttons(code, chat_id):
+    return {
         "inline_keyboard": [
             [
-                {"text": "☀️ Reply", "callback_data": f"reply|{code}"},
-                {"text": "🚫 Block", "callback_data": f"block|{chat_id}"}
+                {"text": "💬 Reply", "callback_data": f"reply|{code}"},
+                {"text": "🚫 Block", "callback_data": f"block|{chat_id}"},
+                {"text": "✅ Unblock", "callback_data": f"unblock|{chat_id}"}
             ]
         ]
     }
-    return keyboard
 
 
-# ----------------------
-# Webhook
-# ----------------------
+# ---------------- WEBHOOK ----------------
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.get_json()
     if not data:
         return "ok"
 
-    # ---------------- callback buttons ----------------
+    # -------- CALLBACKS --------
     if "callback_query" in data:
         cq = data["callback_query"]
-        data_text = cq["data"]
+        action, value = cq["data"].split("|")
 
-        if data_text.startswith("block|"):
-            chat_id = data_text.split("|")[1]
-            set_block(chat_id, True)
-            send_message(ADMIN_ID, "🚫 کاربر بلاک شد")
-            return "ok"
+        if action == "block":
+            set_block(value, True)
+            send_message(ADMIN_ID, "🚫 بلاک شد")
 
-        if data_text.startswith("reply|"):
-            code = data_text.split("|")[1]
-            send_message(ADMIN_ID, f"✉️ Reply mode:\n/reply {code} متن")
-            return "ok"
+        if action == "unblock":
+            set_block(value, False)
+            send_message(ADMIN_ID, "✅ آنبلاک شد")
 
-    # ---------------- message ----------------
-    message = data.get("message")
-    if not message:
+        if action == "reply":
+            send_message(ADMIN_ID, f"✉️ Reply:\n/reply {value} متن")
+
         return "ok"
 
-    chat_id = message["chat"]["id"]
-    text = message.get("text", "")
+    # -------- MESSAGE --------
+    msg = data.get("message")
+    if not msg:
+        return "ok"
+
+    chat_id = msg["chat"]["id"]
 
     # ADMIN
     if chat_id == ADMIN_ID:
 
+        text = msg.get("text", "")
+
         if text.startswith("/reply"):
             parts = text.split(" ", 2)
             if len(parts) < 3:
-                send_message(ADMIN_ID, " /reply U001 text")
+                send_message(ADMIN_ID, "❌ /reply U001 text")
                 return "ok"
 
             code = parts[1]
-            msg = parts[2]
+            reply = parts[2]
 
             target = find_chat_by_code(code)
             if not target:
-                send_message(ADMIN_ID, "❌ کاربر پیدا نشد")
+                send_message(ADMIN_ID, "❌ user not found")
                 return "ok"
 
-            send_message(target, f"☀️ پاسخ:\n\n{msg}")
-            send_message(ADMIN_ID, "🌊 ارسال شد")
+            send_message(target, f"☀️ پاسخ:\n\n{reply}")
             return "ok"
 
         return "ok"
@@ -149,27 +172,47 @@ def webhook():
         return "ok"
 
     code = user["code"]
-    first_name = message["from"].get("first_name", "user")
-    username = message["from"].get("username", "ندارد")
+    first = msg["from"].get("first_name", "")
+    username = msg["from"].get("username", "ندارد")
 
-    admin_text = f"""📩 {code}
-☀️ {first_name}
-🌊 @{username}
+    caption = f" {code}\n☀️ {first}\n🌊 @{username}"
 
-{text}"""
+    # TEXT
+    if msg.get("text"):
+        send_message(ADMIN_ID, caption + "\n\n" + msg["text"], buttons(code, chat_id))
 
-    send_message(
-        ADMIN_ID,
-        admin_text,
-        reply_markup=send_action_buttons(code, chat_id)
-    )
+    # PHOTO
+    elif msg.get("photo"):
+        file_id = msg["photo"][-1]["file_id"]
+        send_file(ADMIN_ID, file_id, "photo")
+        send_message(ADMIN_ID, caption, buttons(code, chat_id))
+
+    # VIDEO
+    elif msg.get("video"):
+        send_file(ADMIN_ID, msg["video"]["file_id"], "video")
+        send_message(ADMIN_ID, caption, buttons(code, chat_id))
+
+    # VOICE
+    elif msg.get("voice"):
+        send_file(ADMIN_ID, msg["voice"]["file_id"], "voice")
+        send_message(ADMIN_ID, caption, buttons(code, chat_id))
+
+    # AUDIO
+    elif msg.get("audio"):
+        send_file(ADMIN_ID, msg["audio"]["file_id"], "audio")
+        send_message(ADMIN_ID, caption, buttons(code, chat_id))
+
+    # DOCUMENT
+    elif msg.get("document"):
+        send_file(ADMIN_ID, msg["document"]["file_id"], "document")
+        send_message(ADMIN_ID, caption, buttons(code, chat_id))
 
     send_message(chat_id, "ارسال شد 🌊")
 
     return "ok"
 
 
-# ----------------------
+# ---------------- START ----------------
 if __name__ == "__main__":
     requests.post(f"https://api.telegram.org/bot{TOKEN}/setWebhook", data={"url": URL})
     app.run(host="0.0.0.0", port=10000)
