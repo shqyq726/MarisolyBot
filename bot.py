@@ -134,7 +134,7 @@ def webhook():
 
             send_message(
                 target_chat,
-                f"💌 پاسخ ناشناس:\n\n{reply_text}"
+                f"☀️ پاسخ ناشناس:\n\n{reply_text}"
             )
 
             send_message(
