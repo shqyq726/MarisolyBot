@@ -1,25 +1,28 @@
 from flask import Flask, request
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 import asyncio
+import os
+import requests
 
-TOKEN = "8681244479:AAFBkhHZRG32Te0mY_7yIA_ZBVU6V6Ldl7Q"
-ADMIN_ID = 777430200
-URL = "https://marisolybot.onrender.com/webhook"
+# ---------- ENV ----------
+TOKEN = os.environ.get("TOKEN")
+ADMIN_ID = int(os.environ.get("ADMIN_ID"))
+URL = os.environ.get("URL")
 
+# ---------- Flask ----------
 app = Flask(__name__)
 
-# ساخت اپ تلگرام
+# ---------- Telegram App ----------
 application = Application.builder().token(TOKEN).build()
 
 
-# -------- handlers --------
-
+# ---------- Handlers ----------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🌊 خوش اومدی به Marisol")
 
 
-async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
     # ارسال به ادمین
@@ -34,11 +37,10 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ثبت هندلرها
 application.add_handler(CommandHandler("start", start))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 
-# -------- Flask webhook --------
-
+# ---------- Flask routes ----------
 @app.route("/")
 def home():
     return "Bot is running!"
@@ -50,22 +52,21 @@ def webhook():
 
     update = Update.de_json(data, application.bot)
 
-    # اجرای async داخل Flask
+    # اجرای async بدون crash
     asyncio.create_task(application.process_update(update))
 
     return "ok"
 
 
-# -------- set webhook --------
-
+# ---------- Set webhook ----------
 def set_webhook():
-    import requests
     requests.get(
         f"https://api.telegram.org/bot{TOKEN}/setWebhook",
         params={"url": URL}
     )
 
 
+# ---------- Run ----------
 if __name__ == "__main__":
     set_webhook()
     app.run(host="0.0.0.0", port=10000)
