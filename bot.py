@@ -154,7 +154,8 @@ def webhook():
         return "ok"
 
     user_code = get_user_code(chat_id)
-
+    print("USERS =", load_users())
+    print("CHAT_ID =", chat_id)
     admin_text = (
         f"☀️ {user_code}\n"
         f"🌊 {first_name}\n"
