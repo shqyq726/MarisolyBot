@@ -1,38 +1,43 @@
-import os
-import requests
 from flask import Flask, request
-from telegram import Bot, Update
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+import asyncio
 
-# ======================
-# CONFIG
-# ======================
-
-TOKEN = os.getenv("TOKEN")  # از Environment Render
-ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
-
-BASE_URL = "https://marisolybot.onrender.com"
-WEBHOOK_URL = f"{BASE_URL}/webhook"
-
-# ======================
-# APP
-# ======================
+TOKEN = "8681244479:AAFBkhHZRG32Te0mY_7yIA_ZBVU6V6Ldl7Q"
+ADMIN_ID = 777430200
+URL = "https://marisolybot.onrender.com/webhook"
 
 app = Flask(__name__)
-bot = Bot(token=TOKEN)
+
+# ساخت اپ تلگرام
+application = Application.builder().token(TOKEN).build()
 
 
-# ======================
-# SET WEBHOOK
-# ======================
+# -------- handlers --------
 
-def set_webhook():
-    url = f"https://api.telegram.org/bot{TOKEN}/setWebhook"
-    requests.get(url, params={"url": WEBHOOK_URL})
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🌊 خوش اومدی به Marisol")
 
 
-# ======================
-# ROUTES
-# ======================
+async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+
+    # ارسال به ادمین
+    await context.bot.send_message(
+        chat_id=ADMIN_ID,
+        text=f"📩 پیام جدید:\n{text}"
+    )
+
+    # جواب به کاربر
+    await update.message.reply_text("ارسال شد 🌊")
+
+
+# ثبت هندلرها
+application.add_handler(CommandHandler("start", start))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
+
+
+# -------- Flask webhook --------
 
 @app.route("/")
 def home():
@@ -41,34 +46,25 @@ def home():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.get_json()
+    data = request.get_json(force=True)
 
-    if not data:
-        return "no data", 200
+    update = Update.de_json(data, application.bot)
 
-    update = Update.de_json(data, bot)
+    # اجرای async داخل Flask
+    asyncio.create_task(application.process_update(update))
 
-    if update.message and update.message.text:
-        text = update.message.text
-        chat_id = update.message.chat.id
-
-        if text == "/start":
-            bot.send_message(chat_id=chat_id, text="🌊 خوش اومدی به Marisol")
-
-        else:
-            bot.send_message(
-                chat_id=ADMIN_ID,
-                text=f"📩 پیام جدید:\n{text}"
-            )
-
-            bot.send_message(chat_id=chat_id, text="ارسال شد 🌊")
-
-    return "ok", 200
+    return "ok"
 
 
-# ======================
-# START
-# ======================
+# -------- set webhook --------
+
+def set_webhook():
+    import requests
+    requests.get(
+        f"https://api.telegram.org/bot{TOKEN}/setWebhook",
+        params={"url": URL}
+    )
+
 
 if __name__ == "__main__":
     set_webhook()
