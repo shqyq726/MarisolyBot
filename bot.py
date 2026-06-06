@@ -1,22 +1,16 @@
 from flask import Flask, request
-import requests
 from telegram import Bot, Update
+import requests
 
 TOKEN = "8681244479:AAHqAg2hYNu8HHHJ5NgWbcqrZQmDY77a2KI"
 ADMIN_ID = 777430200
+URL = "https://marisolybot.onrender.com/webhook"
 
 app = Flask(__name__)
 bot = Bot(token=TOKEN)
 
-WEBHOOK_URL = "https://marisolybot.onrender.com/webhook"
-
-
-# ست کردن webhook
 def set_webhook():
-    requests.get(
-        f"https://api.telegram.org/bot{TOKEN}/setWebhook",
-        params={"url": WEBHOOK_URL}
-    )
+    requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook", params={"url": URL})
 
 
 @app.route("/")
@@ -27,30 +21,25 @@ def home():
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.get_json()
+
+    if not data:
+        return "no data"
+
     update = Update.de_json(data, bot)
 
-    message = update.message
+    if update.message and update.message.text:
 
-    if message and message.text:
+        text = update.message.text
 
-        # /start
-        if message.text == "/start":
-            bot.send_message(
-                chat_id=message.chat_id,
-                text="🌊 خوش اومدی به Marisol\nهرچی می‌خوای ناشناس بفرست ✨"
-            )
-            return "ok"
+        if text == "/start":
+            bot.send_message(chat_id=update.message.chat_id,
+                             text="🌊 خوش اومدی به Marisol")
+        else:
+            bot.send_message(chat_id=ADMIN_ID,
+                             text=f"📩 پیام:\n{text}")
 
-        # پیام ناشناس
-        bot.send_message(
-            chat_id=ADMIN_ID,
-            text=f"📩 پیام ناشناس:\n\n{message.text}"
-        )
-
-        bot.send_message(
-            chat_id=message.chat_id,
-            text="🌊 ارسال شد!"
-        )
+            bot.send_message(chat_id=update.message.chat_id,
+                             text="ارسال شد 🌊")
 
     return "ok"
 
