@@ -108,15 +108,13 @@ def send_media(chat_id, file_id, media_type, caption=None, reply_markup=None):
         keys[media_type]: file_id
     }
 
-    # ⚠️ فقط اگر اجازه داشت caption بفرست
     if caption and media_type not in ["sticker", "video_note"]:
         payload["caption"] = caption
 
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
 
-    r = requests.post(url, data=payload)
-    print(media_type, r.text)
+    requests.post(url, data=payload)
 
 # ================= BUTTONS =================
 
@@ -164,60 +162,84 @@ def webhook():
     text = msg.get("text", "")
 
     # ================= ADMIN =================
-if chat_id == ADMIN_ID:
+    if chat_id == ADMIN_ID:
 
-    # 🔥 ریپلای مستقیم (TEXT + MEDIA)
-    if msg.get("reply_to_message"):
+        # 🔥 ریپلای مستقیم
+        if msg.get("reply_to_message"):
 
-        replied_id = msg["reply_to_message"]["message_id"]
-        mp = load_map()
+            replied_id = msg["reply_to_message"]["message_id"]
+            mp = load_map()
 
-        if str(replied_id) in mp:
-            target = mp[str(replied_id)]["chat_id"]
+            if str(replied_id) in mp:
+                target = mp[str(replied_id)]["chat_id"]
 
-            # ===== TEXT =====
-            if msg.get("text"):
-                send_message(target, f"☀️ پاسخ:\n\n{text}")
+                # ===== TEXT =====
+                if msg.get("text"):
+                    send_message(target, f"☀️ پاسخ:\n\n{text}")
 
-            # ===== PHOTO =====
-            elif msg.get("photo"):
-                file_id = msg["photo"][-1]["file_id"]
-                send_media(target, file_id, "photo")
+                # ===== PHOTO =====
+                elif msg.get("photo"):
+                    file_id = msg["photo"][-1]["file_id"]
+                    send_media(target, file_id, "photo")
 
-            # ===== VIDEO =====
-            elif msg.get("video"):
-                send_media(target, msg["video"]["file_id"], "video")
+                # ===== VIDEO =====
+                elif msg.get("video"):
+                    send_media(target, msg["video"]["file_id"], "video")
 
-            # ===== VOICE =====
-            elif msg.get("voice"):
-                send_media(target, msg["voice"]["file_id"], "voice")
+                # ===== VOICE =====
+                elif msg.get("voice"):
+                    send_media(target, msg["voice"]["file_id"], "voice")
 
-            # ===== AUDIO =====
-            elif msg.get("audio"):
-                send_media(target, msg["audio"]["file_id"], "audio")
+                # ===== AUDIO =====
+                elif msg.get("audio"):
+                    send_media(target, msg["audio"]["file_id"], "audio")
 
-            # ===== DOCUMENT =====
-            elif msg.get("document"):
-                send_media(target, msg["document"]["file_id"], "document")
+                # ===== DOCUMENT =====
+                elif msg.get("document"):
+                    send_media(target, msg["document"]["file_id"], "document")
 
-            # ===== STICKER =====
-            elif msg.get("sticker"):
-                send_media(target, msg["sticker"]["file_id"], "sticker")
+                # ===== STICKER =====
+                elif msg.get("sticker"):
+                    send_media(target, msg["sticker"]["file_id"], "sticker")
 
-            # ===== GIF =====
-            elif msg.get("animation"):
-                send_media(target, msg["animation"]["file_id"], "animation")
+                # ===== GIF =====
+                elif msg.get("animation"):
+                    send_media(target, msg["animation"]["file_id"], "animation")
 
-            # ===== VIDEO NOTE =====
-            elif msg.get("video_note"):
-                send_media(target, msg["video_note"]["file_id"], "video_note")
+                # ===== VIDEO NOTE =====
+                elif msg.get("video_note"):
+                    send_media(target, msg["video_note"]["file_id"], "video_note")
 
-            send_message(ADMIN_ID, "🌊 ارسال شد")
+                send_message(ADMIN_ID, "🌊 ارسال شد")
 
-        else:
-            send_message(ADMIN_ID, "❌ این پیام قابل ریپلای نیست")
+            else:
+                send_message(ADMIN_ID, "❌ این پیام قابل ریپلای نیست")
+
+            return "ok"
+
+        # 🔹 ریپلای دستی (/reply)
+        if text.startswith("/reply"):
+            parts = text.split(" ", 2)
+
+            if len(parts) < 3:
+                send_message(ADMIN_ID, "/reply U001 متن")
+                return "ok"
+
+            code = parts[1]
+            reply = parts[2]
+
+            target = find_chat_by_code(code)
+
+            if not target:
+                send_message(ADMIN_ID, "❌ کاربر پیدا نشد")
+                return "ok"
+
+            send_message(target, f"☀️ پاسخ:\n\n{reply}")
+            send_message(ADMIN_ID, "ارسال شد 🌊")
+            return "ok"
 
         return "ok"
+
     # ================= USER =================
     user = get_user(chat_id)
 
@@ -257,7 +279,6 @@ if chat_id == ADMIN_ID:
     # ========= PHOTO =========
     elif msg.get("photo"):
         file_id = msg["photo"][-1]["file_id"]
-
         send_media(ADMIN_ID, file_id, "photo", caption=header, reply_markup=buttons(code, chat_id))
         send_message(chat_id, "ارسال شد 🌊")
         return "ok"
@@ -303,6 +324,8 @@ if chat_id == ADMIN_ID:
         send_media(ADMIN_ID, msg["document"]["file_id"], "document", caption=header, reply_markup=buttons(code, chat_id))
         send_message(chat_id, "ارسال شد 🌊")
         return "ok"
+
+    return "ok"
 
 
 # ================= START =================
