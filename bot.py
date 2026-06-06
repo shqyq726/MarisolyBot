@@ -139,7 +139,7 @@ def webhook():
 
             send_message(
                 ADMIN_ID,
-                "✅ ارسال شد"
+                "🌊 ارسال شد"
             )
 
         return "ok"
@@ -156,9 +156,9 @@ def webhook():
     user_code = get_user_code(chat_id)
 
     admin_text = (
-        f"📩 {user_code}\n"
-        f"👤 {first_name}\n"
-        f"🔹 @{username}\n\n"
+        f"☀️ {user_code}\n"
+        f"🌊 {first_name}\n"
+        f"🌱 @{username}\n\n"
         f"{text}"
     )
 
