@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 users = set()
 blocked = set()
-pending = {}   # id -> chat_id
+pending = {}  # id -> chat_id
 
 
 def send(chat_id, text):
@@ -40,52 +40,37 @@ def webhook():
     # ثبت کاربر
     users.add(chat_id)
 
-    # اگر بلاک شده
-    if chat_id in blocked:
+    # 👇 ادمین هیچ‌وقت بلاک نمی‌شود
+    if chat_id == ADMIN_ID:
+        pass
+    elif chat_id in blocked:
         return "blocked"
 
-    # دستورات
+    # ---------------- COMMANDS ----------------
+
     if text == "/start":
         send(chat_id, "🌊 خوش اومدی به چت ناشناس")
 
     elif text == "/block":
-        blocked.add(chat_id)
-        send(chat_id, "🚫 بلاک شدی")
+        if chat_id != ADMIN_ID:
+            blocked.add(chat_id)
+            send(chat_id, "🚫 بلاک شدی")
 
     elif text == "/unblock":
-        blocked.discard(chat_id)
-        send(chat_id, "✅ آنبلاک شدی")
+        if chat_id != ADMIN_ID:
+            blocked.discard(chat_id)
+            send(chat_id, "✅ آنبلاک شدی")
 
+    # 🔥 ریست اضطراری (فقط برای تست)
+    elif text == "/reset":
+        blocked.clear()
+        send(chat_id, "♻️ همه بلاک‌ها پاک شد")
+
+    # جواب دادن ادمین به پیام ناشناس
     elif text.startswith("/reply"):
         try:
             parts = text.split(" ", 2)
             target_id = int(parts[1])
             answer = parts[2]
 
-            send(target_id, f"💬 جواب ناشناس:\n{answer}")
-            send(chat_id, "🌊 ارسال شد")
-
-        except:
-            send(chat_id, "❌ فرمت درست: /reply id message")
-
-    else:
-        # پیام ناشناس به ادمین
-        msg_id = len(pending) + 1
-        pending[msg_id] = chat_id
-
-        send(ADMIN_ID,
-f"""📩 پیام ناشناس #{msg_id}
-
-{text}
-
-برای جواب:
- /reply {msg_id} جواب شما
-""")
-
-        send(chat_id, "🌊 پیام شما ارسال شد")
-
-    return "ok"
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+            send(target_id, f"💬 جواب
