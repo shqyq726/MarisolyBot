@@ -183,7 +183,7 @@ def webhook():
                 target = mp[str(replied_id)]["chat_id"]
 
                 send_message(target, f"☀️ پاسخ ادمین:\n\n{text}")
-                send_message(ADMIN_ID, "✅ ارسال شد")
+                send_message(ADMIN_ID, "🌊 ارسال شد")
             else:
                 send_message(ADMIN_ID, "❌ این پیام قابل ریپلای نیست")
 
