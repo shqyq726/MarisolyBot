@@ -79,6 +79,7 @@ def send_message(chat_id, text, reply_markup=None):
     requests.post(url, data=payload)
 
 def send_media(chat_id, file_id, media_type, reply_markup=None):
+
     methods = {
         "photo": "sendPhoto",
         "video": "sendVideo",
@@ -111,7 +112,9 @@ def send_media(chat_id, file_id, media_type, reply_markup=None):
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
 
-    requests.post(url, data=payload)
+    response = requests.post(url, data=payload)
+
+    return response.json()
 
 # ================= BUTTONS =================
 
@@ -228,7 +231,40 @@ def webhook():
                 send_message(ADMIN_ID, "❌ این پیام قابل ریپلای نیست")
 
             return "ok"
+        if text.startswith("/reply"):
 
+            parts = text.split(" ", 2)
+
+            if len(parts) < 3:
+                send_message(
+                    ADMIN_ID,
+                    "❌ فرمت: /reply U001 پیام"
+                )
+                return "ok"
+
+            code = parts[1].strip()
+            reply = parts[2].strip()
+
+            target = find_chat_by_code(code)
+
+            if not target:
+                send_message(
+                    ADMIN_ID,
+                    "❌ کاربر پیدا نشد"
+                )
+                return "ok"
+
+            send_message(
+                target,
+                f"☀️ پاسخ:\n\n{reply}"
+            )
+
+            send_message(
+                ADMIN_ID,
+                "🌊 ارسال شد"
+            )
+
+            return "ok"
         return "ok"
 
     # ================= USER =================
@@ -260,47 +296,134 @@ def webhook():
 
     # ========= PHOTO =========
     elif msg.get("photo"):
-        send_media(ADMIN_ID, msg["photo"][-1]["file_id"], "photo",
-                   reply_markup=buttons(user["code"], chat_id))
+
+        resp = send_media(
+            ADMIN_ID,
+            msg["photo"][-1]["file_id"],
+            "photo",
+            reply_markup=buttons(user["code"], chat_id)
+        )
+
+        msg_id = resp["result"]["message_id"]
+
+        mp = load_map()
+        mp[str(msg_id)] = {"chat_id": chat_id}
+        save_map(mp)
 
     # ========= VIDEO =========
     elif msg.get("video"):
-        send_media(ADMIN_ID, msg["video"]["file_id"], "video",
-                   reply_markup=buttons(user["code"], chat_id))
+
+        resp = send_media(
+            ADMIN_ID,
+            msg["video"]["file_id"],
+            "video",
+            reply_markup=buttons(user["code"], chat_id)
+        )
+
+        msg_id = resp["result"]["message_id"]
+
+        mp = load_map()
+        mp[str(msg_id)] = {"chat_id": chat_id}
+        save_map(mp)
 
     # ========= VOICE =========
     elif msg.get("voice"):
-        send_media(ADMIN_ID, msg["voice"]["file_id"], "voice",
-                   reply_markup=buttons(user["code"], chat_id))
+
+        resp = send_media(
+            ADMIN_ID,
+            msg["voice"]["file_id"],
+            "voice",
+            reply_markup=buttons(user["code"], chat_id)
+        )
+
+        msg_id = resp["result"]["message_id"]
+
+        mp = load_map()
+        mp[str(msg_id)] = {"chat_id": chat_id}
+        save_map(mp)
 
     # ========= AUDIO =========
     elif msg.get("audio"):
-        send_media(ADMIN_ID, msg["audio"]["file_id"], "audio",
-                   reply_markup=buttons(user["code"], chat_id))
+
+        resp = send_media(
+            ADMIN_ID,
+            msg["audio"]["file_id"],
+            "audio",
+            reply_markup=buttons(user["code"], chat_id)
+        )
+
+        msg_id = resp["result"]["message_id"]
+
+        mp = load_map()
+        mp[str(msg_id)] = {"chat_id": chat_id}
+        save_map(mp)
 
     # ========= DOCUMENT =========
     elif msg.get("document"):
-        send_media(ADMIN_ID, msg["document"]["file_id"], "document",
-                   reply_markup=buttons(user["code"], chat_id))
+
+        resp = send_media(
+            ADMIN_ID,
+            msg["document"]["file_id"],
+            "document",
+            reply_markup=buttons(user["code"], chat_id)
+        )
+
+        msg_id = resp["result"]["message_id"]
+
+        mp = load_map()
+        mp[str(msg_id)] = {"chat_id": chat_id}
+        save_map(mp)
 
     # ========= STICKER =========
     elif msg.get("sticker"):
-        send_media(ADMIN_ID, msg["sticker"]["file_id"], "sticker",
-                   reply_markup=buttons(user["code"], chat_id))
+
+        resp = send_media(
+            ADMIN_ID,
+            msg["sticker"]["file_id"],
+            "sticker",
+            reply_markup=buttons(user["code"], chat_id)
+        )
+
+        msg_id = resp["result"]["message_id"]
+
+        mp = load_map()
+        mp[str(msg_id)] = {"chat_id": chat_id}
+        save_map(mp)
 
     # ========= ANIMATION =========
     elif msg.get("animation"):
-        send_media(ADMIN_ID, msg["animation"]["file_id"], "animation",
-                   reply_markup=buttons(user["code"], chat_id))
+
+        resp = send_media(
+            ADMIN_ID,
+            msg["animation"]["file_id"],
+            "animation",
+            reply_markup=buttons(user["code"], chat_id)
+        )
+
+        msg_id = resp["result"]["message_id"]
+
+        mp = load_map()
+        mp[str(msg_id)] = {"chat_id": chat_id}
+        save_map(mp)
 
     # ========= VIDEO NOTE =========
     elif msg.get("video_note"):
-        send_media(ADMIN_ID, msg["video_note"]["file_id"], "video_note",
-                   reply_markup=buttons(user["code"], chat_id))
+
+        resp = send_media(
+            ADMIN_ID,
+            msg["video_note"]["file_id"],
+            "video_note",
+            reply_markup=buttons(user["code"], chat_id)
+        )
+
+        msg_id = resp["result"]["message_id"]
+
+        mp = load_map()
+        mp[str(msg_id)] = {"chat_id": chat_id}
+        save_map(mp)
 
     send_message(chat_id, "ارسال شد 🌊")
     return "ok"
-
 
 # ================= START =================
 
