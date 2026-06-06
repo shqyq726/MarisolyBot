@@ -77,7 +77,6 @@ def send_message(chat_id, text, reply_markup=None):
 
     requests.post(url, data=payload)
 
-def send_media(chat_id, file_id, media_type, caption="", reply_markup=None):
 def send_media(chat_id, file_id, media_type, caption=None, reply_markup=None):
 
     methods = {
