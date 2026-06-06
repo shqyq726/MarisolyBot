@@ -1,6 +1,6 @@
-from flask import Flask, request
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+from flask import Flask, request
 import asyncio
 
 TOKEN = "8681244479:AAHqAg2hYNu8HHHJ5NgWbcqrZQmDY77a2KI"
@@ -10,12 +10,10 @@ app = Flask(__name__)
 
 application = Application.builder().token(TOKEN).build()
 
-# /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🌊 خوش اومدی!")
 
-# پیام ناشناس
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
     await context.bot.send_message(
@@ -23,24 +21,25 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text=f"📩 پیام:\n{text}"
     )
 
-    await update.message.reply_text("✅ ارسال شد")
+    await update.message.reply_text("ارسال شد ✅")
 
 application.add_handler(CommandHandler("start", start))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle))
 
-# مهم‌ترین قسمت: webhook handler درست
+# مهم: اینجا باید application خودش update رو handle کنه
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.get_json(force=True)
-    update = Update.de_json(data, application.bot)
-    asyncio.run(application.process_update(update))
+    update = Update.de_json(request.get_json(force=True), application.bot)
+
+    # مهم‌ترین تغییر:
+    asyncio.get_event_loop().create_task(application.process_update(update))
+
     return "ok"
 
 @app.route("/")
 def home():
     return "Bot is running"
 
-# اینو فقط یک بار صدا بزن
 @app.route("/setwebhook")
 def setwebhook():
     application.bot.set_webhook("https://marisolybot.onrender.com/webhook")
