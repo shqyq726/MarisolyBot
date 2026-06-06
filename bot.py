@@ -1,63 +1,67 @@
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
-import asyncio
 
 TOKEN = "8681244479:AAHqAg2hYNu8HHHJ5NgWbcqrZQmDY77a2KI"
 ADMIN_ID = 777430200
 
-app = Flask(__name__)
+app_flask = Flask(__name__)
 
 # ساخت اپ تلگرام
-application = Application.builder().token(TOKEN).build()
+bot_app = Application.builder().token(TOKEN).build()
 
-# /start
+
+# -------- START --------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🌊 خوش اومدی به بات ناشناس!")
+    await update.message.reply_text(
+        "🌊 خوش اومدی به Marisol\n"
+        "هرچی می‌خوای ناشناس بفرست ✨"
+    )
 
-# پیام ناشناس
+
+# -------- MESSAGE --------
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
     # ارسال به ادمین
     await context.bot.send_message(
         chat_id=ADMIN_ID,
-        text=f"📩 پیام ناشناس:\n{text}"
+        text=f"📩 پیام جدید ناشناس:\n\n{text}"
     )
 
-    # جواب به کاربر
-    await update.message.reply_text("✅ ارسال شد!")
-
-# اضافه کردن handler ها
-application.add_handler(CommandHandler("start", start))
-application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    await update.message.reply_text("🌊 ارسال شد!")
 
 
-# 📍 webhook route (تلگرام پیام‌ها رو اینجا می‌فرسته)
-@app.route("/webhook", methods=["POST"])
+# هندلرها
+bot_app.add_handler(CommandHandler("start", start))
+bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+
+# -------- WEBHOOK ROUTE --------
+@app_flask.route("/webhook", methods=["POST"])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), application.bot)
-    asyncio.run(application.process_update(update))
+    update = Update.de_json(request.get_json(force=True), bot_app.bot)
+    bot_app.update_queue.put(update)
     return "ok"
 
 
-# تست سرور
-@app.route("/")
+# -------- HOME --------
+@app_flask.route("/", methods=["GET"])
 def home():
-    return "Bot is running"
+    return "Bot is running!"
 
 
-# 🚀 ست کردن webhook (فقط یک بار اجرا کن)
-@app.route("/setwebhook")
-def setwebhook():
-    asyncio.run(
-        application.bot.set_webhook(
-            url="https://marisolybot.onrender.com/webhook"
-        )
-    )
-    return "Webhook set!"
+# -------- START BOT + SET WEBHOOK --------
+import asyncio
+
+async def on_start():
+    await bot_app.initialize()
+    await bot_app.bot.set_webhook("https://marisolybot.onrender.com/webhook")
 
 
-# اجرای Flask
+asyncio.get_event_loop().run_until_complete(on_start())
+
+
+# -------- RUN --------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app_flask.run(host="0.0.0.0", port=10000)
