@@ -3,7 +3,7 @@ import requests
 import json
 import os
 
-TOKEN = "8616514786:AAG5Kffc5xJLvdb_AUA2G4crTrC_dKUCcN8"
+TOKEN = "8616514786:AAEWF9AdXPmYQuVXihGdmd_-Ir8z6bIeyD8"
 ADMIN_ID = 777430200
 URL = "https://your-app.onrender.com/webhook"
 
@@ -11,7 +11,6 @@ REPLY_MAP_FILE = "reply_map.json"
 USERS_FILE = "users.json"
 
 app = Flask(__name__)
-
 
 # ================= DB =================
 
@@ -21,11 +20,9 @@ def load_users():
             return json.load(f)
     return {}
 
-
 def save_users(users):
     with open(USERS_FILE, "w", encoding="utf-8") as f:
         json.dump(users, f)
-
 
 def get_user(chat_id):
     users = load_users()
@@ -40,7 +37,6 @@ def get_user(chat_id):
 
     return users[chat_id]
 
-
 def set_block(chat_id, value):
     users = load_users()
     chat_id = str(chat_id)
@@ -49,7 +45,6 @@ def set_block(chat_id, value):
         users[chat_id]["blocked"] = value
         save_users(users)
 
-
 def find_chat_by_code(code):
     users = load_users()
     for chat_id, data in users.items():
@@ -57,18 +52,15 @@ def find_chat_by_code(code):
             return int(chat_id)
     return None
 
-
 def load_map():
     if os.path.exists(REPLY_MAP_FILE):
         with open(REPLY_MAP_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return {}
 
-
 def save_map(data):
     with open(REPLY_MAP_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f)
-
 
 # ================= TELEGRAM =================
 
@@ -84,7 +76,6 @@ def send_message(chat_id, text, reply_markup=None):
         payload["reply_markup"] = json.dumps(reply_markup)
 
     requests.post(url, data=payload)
-
 
 def send_media(chat_id, file_id, media_type, caption="", reply_markup=None):
 
@@ -114,15 +105,16 @@ def send_media(chat_id, file_id, media_type, caption="", reply_markup=None):
 
     payload = {
         "chat_id": chat_id,
-        keys[media_type]: file_id,
-        "caption": caption
+        keys[media_type]: file_id
     }
+
+    if caption:
+        payload["caption"] = caption
 
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
 
     requests.post(url, data=payload)
-
 
 # ================= BUTTONS =================
 
@@ -134,7 +126,6 @@ def buttons(code, chat_id):
             {"text": "✅ آنبلاک", "callback_data": f"unblock|{chat_id}"}
         ]]
     }
-
 
 # ================= WEBHOOK =================
 
@@ -173,28 +164,28 @@ def webhook():
     # ================= ADMIN =================
     if chat_id == ADMIN_ID:
 
-        # 🔥 ریپلای مستقیم
-        if "reply_to_message" in msg:
-
+        # 🔥 ریپلای مستقیم (FIX شده)
+        if msg.get("reply_to_message"):
             replied_id = msg["reply_to_message"]["message_id"]
+
             mp = load_map()
 
             if str(replied_id) in mp:
                 target = mp[str(replied_id)]["chat_id"]
 
-                send_message(target, f"☀️ پاسخ ادمین:\n\n{text}")
+                send_message(target, f"☀️ پاسخ:\n\n{text}")
                 send_message(ADMIN_ID, "🌊 ارسال شد")
             else:
                 send_message(ADMIN_ID, "❌ این پیام قابل ریپلای نیست")
 
             return "ok"
 
-        # 🔹 دستور قدیمی
+        # 🔹 ریپلای دستی
         if text.startswith("/reply"):
             parts = text.split(" ", 2)
 
             if len(parts) < 3:
-                send_message(ADMIN_ID, "❌ /reply U001 متن")
+                send_message(ADMIN_ID, " /reply U001 متن")
                 return "ok"
 
             code = parts[1]
@@ -236,8 +227,7 @@ def webhook():
             }
         )
 
-        data_resp = resp.json()
-        msg_id = data_resp["result"]["message_id"]
+        msg_id = resp.json()["result"]["message_id"]
 
         mp = load_map()
         mp[str(msg_id)] = {
@@ -253,14 +243,7 @@ def webhook():
     elif msg.get("photo"):
         file_id = msg["photo"][-1]["file_id"]
 
-        send_media(
-            ADMIN_ID,
-            file_id,
-            "photo",
-            caption=header,
-            reply_markup=buttons(code, chat_id)
-        )
-
+        send_media(ADMIN_ID, file_id, "photo", caption=header, reply_markup=buttons(code, chat_id))
         send_message(chat_id, "ارسال شد 🌊")
         return "ok"
 
