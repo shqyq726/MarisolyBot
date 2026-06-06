@@ -164,9 +164,9 @@ def webhook():
     text = msg.get("text", "")
 
     # ================= ADMIN =================
-    if chat_id == ADMIN_ID:
+if chat_id == ADMIN_ID:
 
-    # 🔥 ریپلای مستقیم (TEXT)
+    # 🔥 ریپلای مستقیم (TEXT + MEDIA)
     if msg.get("reply_to_message"):
 
         replied_id = msg["reply_to_message"]["message_id"]
@@ -212,35 +212,12 @@ def webhook():
             elif msg.get("video_note"):
                 send_media(target, msg["video_note"]["file_id"], "video_note")
 
-            send_message(ADMIN_ID, "ارسال شد 🌊")
+            send_message(ADMIN_ID, "🌊 ارسال شد")
 
         else:
             send_message(ADMIN_ID, "❌ این پیام قابل ریپلای نیست")
 
         return "ok"
-
-    # 🔹 ریپلای دستی (/reply)
-    if text.startswith("/reply"):
-        parts = text.split(" ", 2)
-
-        if len(parts) < 3:
-            send_message(ADMIN_ID, "/reply U001 متن")
-            return "ok"
-
-        code = parts[1]
-        reply = parts[2]
-
-        target = find_chat_by_code(code)
-
-        if not target:
-            send_message(ADMIN_ID, "❌ کاربر پیدا نشد")
-            return "ok"
-
-        send_message(target, f"☀️ پاسخ:\n\n{reply}")
-        send_message(ADMIN_ID, "ارسال شد 🌊")
-        return "ok"
-
-    return "ok"
     # ================= USER =================
     user = get_user(chat_id)
 
