@@ -12,6 +12,7 @@ USERS_FILE = "users.json"
 
 app = Flask(__name__)
 
+
 # ================= DB =================
 
 def load_users():
@@ -20,9 +21,11 @@ def load_users():
             return json.load(f)
     return {}
 
+
 def save_users(users):
     with open(USERS_FILE, "w", encoding="utf-8") as f:
         json.dump(users, f)
+
 
 def get_user(chat_id):
     users = load_users()
@@ -37,6 +40,7 @@ def get_user(chat_id):
 
     return users[chat_id]
 
+
 def set_block(chat_id, value):
     users = load_users()
     chat_id = str(chat_id)
@@ -45,6 +49,7 @@ def set_block(chat_id, value):
         users[chat_id]["blocked"] = value
         save_users(users)
 
+
 def find_chat_by_code(code):
     users = load_users()
     for chat_id, data in users.items():
@@ -52,15 +57,18 @@ def find_chat_by_code(code):
             return int(chat_id)
     return None
 
+
 def load_map():
     if os.path.exists(REPLY_MAP_FILE):
         with open(REPLY_MAP_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return {}
 
+
 def save_map(data):
     with open(REPLY_MAP_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f)
+
 
 # ================= TELEGRAM =================
 
@@ -69,14 +77,14 @@ def send_message(chat_id, text, reply_markup=None):
 
     payload = {
         "chat_id": chat_id,
-        "text": text,
-        "parse_mode": "Markdown"
+        "text": text
     }
 
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
 
     requests.post(url, data=payload)
+
 
 def send_media(chat_id, file_id, media_type, caption=None, reply_markup=None):
 
@@ -117,16 +125,17 @@ def send_media(chat_id, file_id, media_type, caption=None, reply_markup=None):
 
     requests.post(url, data=payload)
 
+
 # ================= UI BOX =================
 
 def user_box(code, first, username):
     return (
-        "```\n"
-        f"CODE: {code}\n"
-        f"NAME: {first}\n"
-        f"USER: @{username}\n"
-        "```"
+        "📦 اطلاعات کاربر\n"
+        f"📌 کد: {code}\n"
+        f"👤 نام: {first}\n"
+        f"🌐 یوزرنیم: @{username}\n"
     )
+
 
 # ================= BUTTONS =================
 
@@ -138,6 +147,7 @@ def buttons(code, chat_id):
             {"text": "✅ آنبلاک", "callback_data": f"unblock|{chat_id}"}
         ]]
     }
+
 
 # ================= WEBHOOK =================
 
@@ -176,6 +186,7 @@ def webhook():
     # ================= ADMIN =================
     if chat_id == ADMIN_ID:
 
+        # 🔥 ریپلای مستقیم
         if msg.get("reply_to_message"):
 
             replied_id = msg["reply_to_message"]["message_id"]
@@ -239,8 +250,7 @@ def webhook():
             f"https://api.telegram.org/bot{TOKEN}/sendMessage",
             data={
                 "chat_id": ADMIN_ID,
-                "text": f"{text}\n\n{box}",
-                "parse_mode": "Markdown",
+                "text": text,   # 👈 فقط پیام کاربر
                 "reply_markup": json.dumps(buttons(code, chat_id))
             }
         )
