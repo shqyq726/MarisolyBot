@@ -82,7 +82,7 @@ f"""📩 پیام ناشناس #{msg_id}
  /reply {msg_id} جواب شما
 """)
 
-        send(chat_id, "📨 پیام شما ارسال شد")
+        send(chat_id, "🌊 پیام شما ارسال شد")
 
     return "ok"
 
