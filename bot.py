@@ -1,15 +1,13 @@
 from flask import Flask, request
-from telegram import Update, Bot
+from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 import asyncio
 
 TOKEN = "8681244479:AAHqAg2hYNu8HHHJ5NgWbcqrZQmDY77a2KI"
 ADMIN_ID = 777430200
-BASE_URL = "https://marisolybot.onrender.com"
 
 app = Flask(__name__)
 
-bot = Bot(token=TOKEN)
 application = Application.builder().token(TOKEN).build()
 
 # /start
@@ -20,7 +18,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
-    await bot.send_message(
+    await context.bot.send_message(
         chat_id=ADMIN_ID,
         text=f"📩 پیام:\n{text}"
     )
@@ -30,10 +28,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 application.add_handler(CommandHandler("start", start))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-# webhook
+# مهم‌ترین قسمت: webhook handler درست
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), bot)
+    data = request.get_json(force=True)
+    update = Update.de_json(data, application.bot)
     asyncio.run(application.process_update(update))
     return "ok"
 
@@ -41,10 +40,10 @@ def webhook():
 def home():
     return "Bot is running"
 
-# set webhook
+# اینو فقط یک بار صدا بزن
 @app.route("/setwebhook")
 def setwebhook():
-    bot.set_webhook(f"{BASE_URL}/webhook")
+    application.bot.set_webhook("https://marisolybot.onrender.com/webhook")
     return "Webhook set!"
 
 if __name__ == "__main__":
