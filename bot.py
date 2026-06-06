@@ -78,6 +78,7 @@ def send_message(chat_id, text, reply_markup=None):
     requests.post(url, data=payload)
 
 def send_media(chat_id, file_id, media_type, caption="", reply_markup=None):
+def send_media(chat_id, file_id, media_type, caption=None, reply_markup=None):
 
     methods = {
         "photo": "sendPhoto",
@@ -108,13 +109,15 @@ def send_media(chat_id, file_id, media_type, caption="", reply_markup=None):
         keys[media_type]: file_id
     }
 
-    if caption:
+    # ⚠️ فقط اگر اجازه داشت caption بفرست
+    if caption and media_type not in ["sticker", "video_note"]:
         payload["caption"] = caption
 
     if reply_markup:
         payload["reply_markup"] = json.dumps(reply_markup)
 
-    requests.post(url, data=payload)
+    r = requests.post(url, data=payload)
+    print(media_type, r.text)
 
 # ================= BUTTONS =================
 
