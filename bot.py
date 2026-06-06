@@ -17,13 +17,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🌊 خوش اومدی! پیام ناشناس بفرست")
 
 # پیام ناشناس
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
-    await bot.send_message(
-        chat_id=ADMIN_ID,
-        text=f"📩 پیام ناشناس:\n\n{text}"
-    )
+    print("MESSAGE RECEIVED:", text)
+
+    try:
+        await bot.send_message(
+            chat_id=ADMIN_ID,
+            text=f"📩 پیام ناشناس:\n\n{text}"
+        )
+    except Exception as e:
+        print("ERROR:", e)
 
     await update.message.reply_text("✅ ارسال شد!")
 
