@@ -3,20 +3,24 @@ import requests
 
 TOKEN = "8681244479:AAFBkhHZRG32Te0mY_7yIA_ZBVU6V6Ldl7Q"
 ADMIN_ID = 777430200
-URL = "https://marisolybot.onrender.com/webhook"
 
 app = Flask(__name__)
 
+users = set()
+blocked = set()
+pending = {}   # id -> chat_id
 
-# set webhook (فقط یک بار اجرا میشه)
-def set_webhook():
-    url = f"https://api.telegram.org/bot{TOKEN}/setWebhook"
-    requests.post(url, data={"url": URL})
+
+def send(chat_id, text):
+    requests.post(
+        f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+        data={"chat_id": chat_id, "text": text}
+    )
 
 
 @app.route("/")
 def home():
-    return "Bot is running!"
+    return "Bot is running"
 
 
 @app.route("/webhook", methods=["POST"])
@@ -24,30 +28,64 @@ def webhook():
     data = request.get_json()
 
     if not data:
-        return "no data"
+        return "ok"
 
-    message = data.get("message")
+    msg = data.get("message", {})
+    chat_id = msg.get("chat", {}).get("id")
+    text = msg.get("text", "")
 
-    if not message:
-        return "no message"
+    if not chat_id:
+        return "ok"
 
-    text = message.get("text")
-    chat_id = message["chat"]["id"]
+    # ثبت کاربر
+    users.add(chat_id)
 
+    # اگر بلاک شده
+    if chat_id in blocked:
+        return "blocked"
+
+    # دستورات
     if text == "/start":
-        send_message(chat_id, "🌊 خوش اومدی به Marisol")
+        send(chat_id, "🌊 خوش اومدی به چت ناشناس")
+
+    elif text == "/block":
+        blocked.add(chat_id)
+        send(chat_id, "🚫 بلاک شدی")
+
+    elif text == "/unblock":
+        blocked.discard(chat_id)
+        send(chat_id, "✅ آنبلاک شدی")
+
+    elif text.startswith("/reply"):
+        try:
+            parts = text.split(" ", 2)
+            target_id = int(parts[1])
+            answer = parts[2]
+
+            send(target_id, f"💬 جواب ناشناس:\n{answer}")
+            send(chat_id, "🌊 ارسال شد")
+
+        except:
+            send(chat_id, "❌ فرمت درست: /reply id message")
+
     else:
-        send_message(ADMIN_ID, f"📩 پیام:\n{text}")
-        send_message(chat_id, "ارسال شد 🌊")
+        # پیام ناشناس به ادمین
+        msg_id = len(pending) + 1
+        pending[msg_id] = chat_id
+
+        send(ADMIN_ID,
+f"""📩 پیام ناشناس #{msg_id}
+
+{text}
+
+برای جواب:
+ /reply {msg_id} جواب شما
+""")
+
+        send(chat_id, "📨 پیام شما ارسال شد")
 
     return "ok"
 
 
-def send_message(chat_id, text):
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    requests.post(url, data={"chat_id": chat_id, "text": text})
-
-
 if __name__ == "__main__":
-    set_webhook()
     app.run(host="0.0.0.0", port=10000)
