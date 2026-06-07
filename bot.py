@@ -29,12 +29,21 @@ def get_user(chat_id, first_name="", username=""):
     chat_id = str(chat_id)
 
     if chat_id not in users:
-        users[chat_id] = {
-            "code": f"U{len(users)+1:03d}",
-            "blocked": False,
-            "first": first_name,
-            "username": username
-        }
+    users[chat_id] = {
+        "code": f"U{len(users)+1:03d}",
+        "blocked": False,
+        "first": first_name,
+        "username": username
+    }
+
+    save_users(users)
+
+    send_message(
+        int(chat_id),
+        "سلام،به Marisol خوش اومدی 🌊"
+    )
+
+    return users[chat_id]
     else:
         users[chat_id]["first"] = first_name
         users[chat_id]["username"] = username
