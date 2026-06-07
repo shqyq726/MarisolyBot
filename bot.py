@@ -29,27 +29,30 @@ def get_user(chat_id, first_name="", username=""):
     chat_id = str(chat_id)
 
     if chat_id not in users:
-    users[chat_id] = {
-        "code": f"U{len(users)+1:03d}",
-        "blocked": False,
-        "first": first_name,
-        "username": username
-    }
 
-    save_users(users)
+        users[chat_id] = {
+            "code": f"U{len(users)+1:03d}",
+            "blocked": False,
+            "first": first_name,
+            "username": username
+        }
 
-    send_message(
-        int(chat_id),
-        "سلام،به Marisol خوش اومدی 🌊"
-    )
+        save_users(users)
 
-    return users[chat_id]
+        send_message(
+            int(chat_id),
+            f"سلام {first_name}، به Marisol خوش اومدی 🌊"
+        )
+
+        return users[chat_id]
+
     else:
         users[chat_id]["first"] = first_name
         users[chat_id]["username"] = username
 
-    save_users(users)
-    return users[chat_id]
+        save_users(users)
+
+        return users[chat_id]
 
 def set_block(chat_id, value):
     users = load_users()
