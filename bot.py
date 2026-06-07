@@ -128,6 +128,14 @@ def send_media(chat_id, file_id, media_type, reply_markup=None):
 
     return response.json()
 
+def answer_callback(callback_id):
+    requests.post(
+        f"https://api.telegram.org/bot{TOKEN}/answerCallbackQuery",
+        data={
+            "callback_query_id": callback_id
+        }
+    )
+
 # ================= BUTTONS =================
 
 def buttons(code, chat_id):
@@ -158,6 +166,9 @@ def webhook():
     # ========== CALLBACK ==========
     if "callback_query" in data:
         cq = data["callback_query"]
+
+        answer_callback(cq["id"])
+
         action, value = cq["data"].split("|")
 
         if action == "block":
@@ -169,19 +180,25 @@ def webhook():
             send_message(ADMIN_ID, "✅ کاربر آنبلاک شد")
 
         elif action == "reply":
-            send_message(ADMIN_ID, f"☀️ ریپلای:\n/reply {value} پیام")
+            send_message(
+                ADMIN_ID,
+                f"☀️ ریپلای:\n/reply {value} پیام"
+            )
 
         elif action == "info":
             users = load_users()
             user = users.get(str(value))
 
             if user:
+
+                username = user.get("username") or "-"
+
                 send_message(
                     ADMIN_ID,
                     f"""👤 INFO
 
 📛 NAME: {user.get('first','-')}
-📱 USERNAME: @{user.get('username','-')}
+📱 USERNAME: @{username}
 🆔 CHAT ID: {value}
 📌 CODE: {user['code']}
 🚫 BLOCKED: {'YES' if user['blocked'] else 'NO'}"""
