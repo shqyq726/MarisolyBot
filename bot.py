@@ -5,7 +5,7 @@ import os
 
 TOKEN = "8616514786:AAEWF9AdXPmYQuVXihGdmd_-Ir8z6bIeyD8"
 ADMIN_ID = 777430200
-URL = "https://your-app.onrender.com/webhook"
+URL = "https://marisolybot.onrender.com/webhook"
 
 REPLY_MAP_FILE = "reply_map.json"
 USERS_FILE = "users.json"
