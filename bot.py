@@ -2,6 +2,7 @@ from flask import Flask, request
 import requests
 import json
 import os
+from supabase import create_client
 
 TOKEN = "8616514786:AAEWF9AdXPmYQuVXihGdmd_-Ir8z6bIeyD8"
 ADMIN_ID = 777430200
@@ -11,56 +12,92 @@ REPLY_MAP_FILE = "reply_map.json"
 USERS_FILE = "users.json"
 
 app = Flask(__name__)
+SUPABASE_URL = os.environ["SUPABASE_URL"]
+SUPABASE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+
+supabase = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY
+)
 
 # ================= DB =================
 
-def load_users():
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-def save_users(users):
-    with open(USERS_FILE, "w", encoding="utf-8") as f:
-        json.dump(users, f)
-
 def get_user(chat_id, first_name="", username=""):
-    users = load_users()
-    chat_id = str(chat_id)
 
-    if chat_id not in users:
+    result = (
+        supabase.table("users")
+        .select("*")
+        .eq("chat_id", str(chat_id))
+        .execute()
+    )
 
-        users[chat_id] = {
-            "code": f"U{len(users)+1:03d}",
-            "blocked": False,
+    if result.data:
+
+        user = result.data[0]
+
+        supabase.table("users").update({
             "first": first_name,
             "username": username
-        }
+        }).eq("chat_id", str(chat_id)).execute()
 
-        save_users(users)
+        return user
 
-        send_message(
-            int(chat_id),
-            f"سلام به Marisol خوش اومدی:) 🌊"
-        )
+    count = (
+        supabase.table("users")
+        .select("id")
+        .execute()
+    )
 
-        return users[chat_id]
+    code = f"U{len(count.data)+1:03d}"
 
-    else:
-        users[chat_id]["first"] = first_name
-        users[chat_id]["username"] = username
+    user = {
+        "chat_id": str(chat_id),
+        "code": code,
+        "blocked": False,
+        "first": first_name,
+        "username": username
+    }
 
-        save_users(users)
+    supabase.table("users").insert(user).execute()
 
-        return users[chat_id]
+    send_message(
+        int(chat_id),
+        "سلام به Marisol خوش اومدی:) 🌊"
+    )
+
+    return user
+
 
 def set_block(chat_id, value):
-    users = load_users()
-    chat_id = str(chat_id)
 
-    if chat_id in users:
-        users[chat_id]["blocked"] = value
-        save_users(users)
+    supabase.table("users").update({
+        "blocked": value
+    }).eq(
+        "chat_id",
+        str(chat_id)
+    ).execute()
+
+
+def load_users():
+
+    result = (
+        supabase.table("users")
+        .select("*")
+        .execute()
+    )
+
+    users = {}
+
+    for user in result.data:
+
+        users[str(user["chat_id"])] = {
+            "code": user["code"],
+            "blocked": user["blocked"],
+            "first": user["first"],
+            "username": user["username"]
+        }
+
+    return users
 
 def load_map():
     if os.path.exists(REPLY_MAP_FILE):
