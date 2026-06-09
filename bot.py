@@ -41,7 +41,7 @@ def get_user(chat_id, first_name="", username=""):
 
         send_message(
             int(chat_id),
-            f"سلام {first_name}، به Marisol خوش اومدی 🌊"
+            f"سلام به Marisol خوش اومدی:) 🌊"
         )
 
         return users[chat_id]
